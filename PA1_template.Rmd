@@ -1,20 +1,105 @@
-# Reproducible Research: Peer Assessment 1
-
+Reproducible Research : Peer Assessment 1
+========================================================
 
 ## Loading and preprocessing the data
+First, load the data.
 
+```{r}
+data <- read.csv("activity.csv")
+data$date<-as.Date(data$date)
 
-
+```
 ## What is mean total number of steps taken per day?
+Next, make a histogram of the total number of steps taken each day.
 
+```{r}
+x <- c(1, 10, 20, 30, 40, 50, 60)
+stepssum = tapply(data$steps, data$date, sum, na.rm = TRUE)
+# create a histogram of total steps per date
+plot(stepssum, type="h", xlab="", ylab = "Total steps", xaxt="n")
+axis(side =1, at=x, labels = names(stepssum)[x], las=2, cex.axis=.7)
+title("Total number of steps taken each day")
+```
+
+Now, calculate the mean and median of the total number of steps taken each day.
+
+```{r}
+meansteps <- tapply(data$steps, data$date, mean, na.rm = TRUE)
+mediansteps <- tapply(data$steps, data$date, median, na.rm = TRUE)
+```
+
+The means are `r meansteps`.
+
+And the medians are `r mediansteps`.
 
 
 ## What is the average daily activity pattern?
 
+```{r}
+meaninterval <- tapply(data$steps, data$interval, mean, na.rm=TRUE)
+plot(meaninterval, type="l", xlab = "Interval", ylab = "Average number of steps")
+
+# find the interval with the maximum average number of steps.
+maxinterval <- which.max(meaninterval)
+```
+
+The interval with the maximum average number of steps is `r maxinterval` with a value of `r meaninterval[maxinterval]`
 
 
 ## Imputing missing values
 
+```{r}
+# find number of rows with missing data
+numofna <- sum(is.na(data$steps))
+
+
+# replace missing data with the value from the mean of its interval
+# creating a new data set, imdata
+imdata <- subset(data, is.na(data$steps) == FALSE)
+missing <- subset(data, is.na(data$steps))
+missing$steps <- meaninterval[as.character(missing$interval)]
+imdata <- rbind(imdata, missing)
+
+#repeat mean/median calculation from above
+x <- c(1, 10, 20, 30, 40, 50, 60)
+stepssum = tapply(imdata$steps, imdata$date, sum, na.rm = TRUE)
+# create a histogram of total steps per date
+plot(stepssum, type="h", xlab="", ylab = "Total steps", xaxt="n")
+axis(side =1, at=x, labels = names(stepssum)[x], las=2, cex.axis=.7)
+title("Total number of steps taken each day")
+
+meansteps <- tapply(imdata$steps, imdata$date, mean, na.rm = TRUE)
+mediansteps <- tapply(imdata$steps, imdata$date, median, na.rm = TRUE)
+```
+
+The means are `r meansteps`.
+
+And the medians are `r mediansteps`.
+
+As we can see, the values that used to be NA are now different.  Since NAs seem to be lumped into days, there doesn't seem to be much difference in the other values.
+
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+# create a weekday/weekend factor
+imdata$day<-as.factor(weekdays(imdata$date))
+imdata$day<-factor(imdata$day, labels=c("weekday", "weekday", "weekend", "weekend", "weekday", "weekday","weekday"))
+levels(imdata$day) <- list(weekday = c(1,2,5,6,7), weekend = c(3,4))
+
+# create panel plot of time series plot (like above) separating by weekday/weekend data
+wkday <- subset(imdata, imdata$day=="weekday")
+wkend <- subset(imdata, imdata$day=="weekend")
+
+par(mfrow = c(2,1), cex.lab = .7, mar = c(2, 4, 4, 2))
+
+meaninterval <- tapply(wkday$steps, wkday$interval, mean, na.rm=TRUE)
+plot(meaninterval, type="l", xlab = "Interval", ylab = "Average number of steps")
+title("Weekday")
+
+meaninterval <- tapply(wkend$steps, wkend$interval, mean, na.rm=TRUE)
+plot(meaninterval, type="l", xlab = "Interval", ylab = "Average number of steps")
+title("Weekend")
+
+```
